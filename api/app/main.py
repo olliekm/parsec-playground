@@ -8,7 +8,7 @@ from app.db.database import init_db
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: Initialize the database
-    await init_db()
+    init_db()
     yield
     # Shutdown: Add any cleanup code here if necessary
 
