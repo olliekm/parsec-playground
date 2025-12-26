@@ -1,0 +1,22 @@
+[project]
+name = "parsec-playground-api"
+version = "0.1.0"
+description = "Prompt Playground API for Parsec LLM orchestration toolkit"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.109.0",
+    "uvicorn[standard]>=0.27.0",
+    "websockets>=12.0",
+    "sqlalchemy>=2.0.25",
+    "pydantic>=2.5.3",
+    "pydantic-settings>=2.1.0",
+    "python-multipart>=0.0.6",
+    "aiofiles>=23.2.1",
+    "openai>=1.10.0",
+    "anthropic>=0.18.0",
+    "google-generativeai>=0.3.2",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
