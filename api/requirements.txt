@@ -9,3 +9,4 @@ aiofiles>=23.2.1
 openai>=1.57.0
 anthropic>=0.40.0
 google-generativeai>=0.8.0
+parsec-llm>=0.1.0
