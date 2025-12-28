@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, JSON, Text, Float, Boolean, DateTime
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, timezone
 from app.db.database import Base
 
 class Template(Base):
@@ -9,8 +9,8 @@ class Template(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True, index=True, nullable=False)
-    created_at = Column(DateTime, default=lambda: datetime.now(datetime.timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(datetime.timezone.utc), onupdate=lambda: datetime.now(datetime.timezone.utc))
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     runs = relationship("Run", back_populates="template")
     versions = relationship("TemplateVersion", back_populates="template")
@@ -25,7 +25,7 @@ class TemplateVersion(Base):
     content = Column(Text, nullable=False)
     variables = Column(JSON)
     schema = Column(JSON)
-    created_at = Column(DateTime, default=lambda: datetime.now(datetime.timezone.utc))
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     template = relationship("Template", back_populates="versions")
 
@@ -46,7 +46,7 @@ class Run(Base):
     tokens_used = Column(Integer)
     retry_count = Column(Integer, default=0)
     validation_status = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.now(datetime.timezone.utc))
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     template = relationship("Template", back_populates="runs")
 

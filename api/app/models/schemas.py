@@ -6,10 +6,10 @@ from datetime import datetime
 
 class GenerateRequest(BaseModel):
     """
-    Request to generate output from a prompt and schema.
+    Request to generate output from a prompt and json_schema.
     """
     prompt: str
-    schema: dict
+    json_schema: dict
     provider: str
     model: str
     # TODO: fix these defaults later
@@ -38,7 +38,7 @@ class TemplateCreate(BaseModel):
     name: str
     content: str
     variables: Optional[dict] = None
-    schema: dict
+    json_schema: dict
 
 class TemplateUpdate(BaseModel):
     """
@@ -47,7 +47,7 @@ class TemplateUpdate(BaseModel):
     name: Optional[str] = None
     content: Optional[str] = None
     variables: Optional[dict] = None
-    schema: Optional[dict] = None
+    json_schema: Optional[dict] = None
 
 class TemplateVersionResponse(BaseModel):
     """
@@ -58,7 +58,7 @@ class TemplateVersionResponse(BaseModel):
     version: int
     content: str
     variables: Optional[dict] = None
-    schema: dict
+    json_schema: dict
     created_at: datetime
 
     class Config:
@@ -88,7 +88,7 @@ class RunResponse(BaseModel):
     provider: str
     model: str
     prompt: str
-    schema: dict
+    json_schema: dict
     raw_output: Optional[str] = None
     parsed_output: Optional[Any] = None
     validation_errors: Optional[List[str]] = None

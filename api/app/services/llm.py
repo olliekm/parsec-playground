@@ -4,17 +4,19 @@ LLM service
 import os
 from typing import Tuple, Any
 from parsec.enforcement.engine import EnforcementEngine
-from parsec.models.adapters import OpenAIAdapter, AnthropicAdapter, GeminiAdapter
+from parsec.models.adapters import OpenAIAdapter, AnthropicAdapter
 from parsec.validators import JSONValidator
 
 def create_adapter(provider: str, model: str) -> Any:
     """Create and return the appropriate LLM adapter based on provider."""
     if provider == "openai":
-        return OpenAIAdapter(model=model, api_key=os.getenv("OPENAI_API_KEY"))
+        api_key = os.getenv("OPENAI_API_KEY", "").strip()
+        return OpenAIAdapter(model=model, api_key=api_key)
     elif provider == "anthropic":
-        return AnthropicAdapter(model=model, api_key=os.getenv("ANTHROPIC_API_KEY"))
-    elif provider == "gemini":
-        return GeminiAdapter(model=model, api_key=os.getenv("GOOGLE_API_KEY"))
+        api_key = os.getenv("ANTHROPIC_API_KEY", "").strip()
+        return AnthropicAdapter(model=model, api_key=api_key)
+    # elif provider == "gemini":
+    #     return GeminiAdapter(model=model, api_key=os.getenv("GOOGLE_API_KEY"))
     else:
         raise ValueError(f"Unsupported provider: {provider}")
 
@@ -29,7 +31,7 @@ async def generate_with_enforcement(
 ) -> Tuple[Any, str, bool, list, float, int, int]:
     """Generate output using the specified LLM with schema enforcement."""
     adapter = create_adapter(provider, model)
-    validator = JSONValidator(schema=schema)
+    validator = JSONValidator()
     engine = EnforcementEngine(
         adapter=adapter,
         validator=validator,

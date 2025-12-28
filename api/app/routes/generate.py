@@ -25,7 +25,7 @@ async def generate(request: GenerateRequest, db: Session = Depends(get_db)):
             provider=request.provider,
             model=request.model,
             prompt=request.prompt,
-            schema=request.schema,
+            schema=request.json_schema,
             temperature=request.temperature,
             max_tokens=request.max_tokens
         )
@@ -34,7 +34,7 @@ async def generate(request: GenerateRequest, db: Session = Depends(get_db)):
             provider=request.provider,
             model=request.model,
             prompt=request.prompt,
-            schema=request.schema,
+            schema=request.json_schema,
             raw_output=raw_output,
             parsed_output=parsed_output,
             validation_status=validation_status,
@@ -58,6 +58,9 @@ async def generate(request: GenerateRequest, db: Session = Depends(get_db)):
         )
     except Exception as e:
         db.rollback()
+        import traceback
+        error_detail = f"{str(e)}\n{traceback.format_exc()}"
+        print(f"Error in generate endpoint: {error_detail}")
         raise HTTPException(status_code=500, detail=str(e))
     
 @router.websocket("/ws/stream")
