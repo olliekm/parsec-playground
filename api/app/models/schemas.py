@@ -103,11 +103,6 @@ class RunResponse(BaseModel):
         from_attributes = True
         populate_by_name = True
 
-    model_config = {
-        "populate_by_name": True,
-        "from_attributes": True,
-    }
-
 class HistoryResponse(BaseModel):
     """
     Paginated response containing a list of runs for history.
