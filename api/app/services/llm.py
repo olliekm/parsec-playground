@@ -7,14 +7,24 @@ from parsec.enforcement.engine import EnforcementEngine
 from parsec.models.adapters import OpenAIAdapter, AnthropicAdapter
 from parsec.validators import JSONValidator
 
-def create_adapter(provider: str, model: str) -> Any:
-    """Create and return the appropriate LLM adapter based on provider."""
+def create_adapter(provider: str, model: str, api_key: str = None) -> Any:
+    """Create and return the appropriate LLM adapter based on provider.
+
+    Args:
+        provider: The LLM provider (openai, anthropic, etc.)
+        model: The model name
+        api_key: Optional user-provided API key. If not provided, uses environment variable.
+    """
     if provider == "openai":
-        api_key = os.getenv("OPENAI_API_KEY", "").strip()
-        return OpenAIAdapter(model=model, api_key=api_key)
+        key = api_key or os.getenv("OPENAI_API_KEY", "").strip()
+        if not key:
+            raise ValueError("OpenAI API key is required. Please provide an API key or set OPENAI_API_KEY in environment.")
+        return OpenAIAdapter(model=model, api_key=key)
     elif provider == "anthropic":
-        api_key = os.getenv("ANTHROPIC_API_KEY", "").strip()
-        return AnthropicAdapter(model=model, api_key=api_key)
+        key = api_key or os.getenv("ANTHROPIC_API_KEY", "").strip()
+        if not key:
+            raise ValueError("Anthropic API key is required. Please provide an API key or set ANTHROPIC_API_KEY in environment.")
+        return AnthropicAdapter(model=model, api_key=key)
     # elif provider == "gemini":
     #     return GeminiAdapter(model=model, api_key=os.getenv("GOOGLE_API_KEY"))
     else:
@@ -27,10 +37,21 @@ async def generate_with_enforcement(
     prompt: str,
     schema: dict,
     temperature: float = 0.7,
-    max_tokens: int = 1000
+    max_tokens: int = 1000,
+    api_key: str = None
 ) -> Tuple[Any, str, bool, list, float, int, int]:
-    """Generate output using the specified LLM with schema enforcement."""
-    adapter = create_adapter(provider, model)
+    """Generate output using the specified LLM with schema enforcement.
+
+    Args:
+        provider: The LLM provider
+        model: The model name
+        prompt: The input prompt
+        schema: JSON schema for validation
+        temperature: Generation temperature
+        max_tokens: Maximum tokens to generate
+        api_key: Optional user-provided API key
+    """
+    adapter = create_adapter(provider, model, api_key)
     validator = JSONValidator()
     engine = EnforcementEngine(
         adapter=adapter,

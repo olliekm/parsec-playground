@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
-import { generateAPI } from "@/lib/api";
-import type { GenerateResponse } from "@/lib/types";
+import { generateAPI, historyAPI } from "@/lib/api";
+import type { GenerateResponse, Run } from "@/lib/types";
 
 // Dynamically import Monaco Editor (client-side only)
 const Editor = dynamic(() => import("@monaco-editor/react"), { ssr: false });
@@ -131,10 +131,16 @@ export default function Home() {
   const [model, setModel] = useState("gpt-4o-mini");
   const [temperature, setTemperature] = useState(0.7);
   const [maxTokens, setMaxTokens] = useState(1500);
+  const [apiKey, setApiKey] = useState("");
 
   const [loading, setLoading] = useState(false);
+  const [loadingStage, setLoadingStage] = useState(0);
   const [result, setResult] = useState<GenerateResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const [showHistory, setShowHistory] = useState(false);
+  const [history, setHistory] = useState<Run[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   const loadExample = (example: keyof typeof EXAMPLES) => {
     setPrompt(EXAMPLES[example].prompt);
@@ -143,8 +149,56 @@ export default function Home() {
     setError(null);
   };
 
+  const fetchHistory = async () => {
+    setLoadingHistory(true);
+    try {
+      const response = await historyAPI.list({ page: 1, page_size: 50 });
+      setHistory(response.runs);
+    } catch (err) {
+      console.error("Failed to fetch history:", err);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  const loadFromHistory = (run: Run) => {
+    setPrompt(run.prompt);
+    setSchema(JSON.stringify(run.json_schema, null, 2));
+    setProvider(run.provider);
+    setModel(run.model);
+    setShowHistory(false);
+  };
+
+  useEffect(() => {
+    if (showHistory) {
+      fetchHistory();
+    }
+  }, [showHistory]);
+
+  // Progress through loading stages
+  useEffect(() => {
+    if (!loading) {
+      setLoadingStage(0);
+      return;
+    }
+
+    const stages = [
+      { delay: 0, stage: 0 },      // "Analyzing schema..."
+      { delay: 800, stage: 1 },    // "Preparing prompt..."
+      { delay: 1600, stage: 2 },   // "Generating response..."
+      { delay: 3000, stage: 3 },   // "Validating output..."
+    ];
+
+    const timers = stages.map(({ delay, stage }) =>
+      setTimeout(() => setLoadingStage(stage), delay)
+    );
+
+    return () => timers.forEach(timer => clearTimeout(timer));
+  }, [loading]);
+
   const handleGenerate = async () => {
     setLoading(true);
+    setLoadingStage(0);
     setError(null);
     setResult(null);
 
@@ -158,6 +212,7 @@ export default function Home() {
         model,
         temperature,
         max_tokens: maxTokens,
+        ...(apiKey && { api_key: apiKey }),
       });
 
       setResult(response);
@@ -169,7 +224,64 @@ export default function Home() {
   };
 
   return (
-    <div className="flex h-screen bg-[#1e1e1e] text-gray-100">
+    <div className="flex h-screen bg-[#1e1e1e] text-gray-100 relative">
+      {/* History Sidebar */}
+      {showHistory && (
+        <div className="absolute inset-y-0 left-0 w-80 bg-[#252525] border-r border-gray-800 z-50 flex flex-col">
+          {/* History Header */}
+          <div className="h-14 flex items-center justify-between px-4 border-b border-gray-800">
+            <h2 className="text-sm font-semibold">History</h2>
+            <button
+              onClick={() => setShowHistory(false)}
+              className="p-1 hover:bg-gray-700 rounded transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          {/* History List */}
+          <div className="flex-1 overflow-y-auto">
+            {loadingHistory ? (
+              <div className="flex items-center justify-center h-32">
+                <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            ) : history.length === 0 ? (
+              <div className="flex items-center justify-center h-32 text-gray-500 text-sm">
+                No history yet
+              </div>
+            ) : (
+              <div className="p-2 space-y-2">
+                {history.map((run) => (
+                  <button
+                    key={run.id}
+                    onClick={() => loadFromHistory(run)}
+                    className="w-full text-left p-3 bg-[#2d2d2d] hover:bg-[#363636] border border-gray-700 rounded-lg transition-colors"
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <span className="text-xs font-mono text-gray-500">#{run.id}</span>
+                      <div className="flex items-center gap-1.5">
+                        <div className={`w-1.5 h-1.5 rounded-full ${run.validation_status ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                        <span className="text-xs text-gray-500">{run.provider}</span>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-300 line-clamp-2 mb-2">
+                      {run.prompt}
+                    </p>
+                    <div className="flex items-center gap-3 text-xs text-gray-500">
+                      <span>{run.model}</span>
+                      {run.latency_ms && <span>{run.latency_ms.toFixed(0)}ms</span>}
+                      {run.tokens_used && <span>{run.tokens_used} tokens</span>}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Left Side - Input */}
       <div className="flex-1 flex flex-col border-r border-gray-800">
         {/* Header */}
@@ -178,11 +290,21 @@ export default function Home() {
             <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
             <h1 className="text-sm font-semibold">Parsec Playground</h1>
           </div>
-          <button
-            onClick={handleGenerate}
-            disabled={loading}
-            className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm font-medium rounded-md transition-colors flex items-center gap-2"
-          >
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowHistory(!showHistory)}
+              className="px-3 py-1.5 bg-[#2d2d2d] hover:bg-[#363636] border border-gray-700 text-white text-sm font-medium rounded-md transition-colors flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              History
+            </button>
+            <button
+              onClick={handleGenerate}
+              disabled={loading}
+              className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm font-medium rounded-md transition-colors flex items-center gap-2"
+            >
             {loading ? (
               <>
                 <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -196,7 +318,8 @@ export default function Home() {
                 Generate
               </>
             )}
-          </button>
+            </button>
+          </div>
         </div>
 
         {/* Configuration */}
@@ -275,6 +398,21 @@ export default function Home() {
                 className="w-full bg-[#2d2d2d] border border-gray-700 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
+          </div>
+
+          {/* API Key Input */}
+          <div className="mt-3">
+            <label className="block text-xs text-gray-400 mb-1.5">
+              API Key (Optional)
+              <span className="ml-2 text-gray-500">Leave empty to use server key</span>
+            </label>
+            <input
+              type="password"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              placeholder={`Enter your ${provider === 'openai' ? 'OpenAI' : 'Anthropic'} API key`}
+              className="w-full bg-[#2d2d2d] border border-gray-700 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 font-mono"
+            />
           </div>
         </div>
 
@@ -357,6 +495,34 @@ export default function Home() {
                 <div>
                   <h3 className="text-sm font-medium text-red-400">Error</h3>
                   <p className="text-sm text-red-300 mt-1">{error}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {loading && (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center space-y-6">
+                {/* Animated spinner */}
+                <div className="relative w-16 h-16 mx-auto">
+                  <div className="absolute inset-0 border-4 border-gray-700 rounded-full"></div>
+                  <div className="absolute inset-0 border-4 border-blue-500 rounded-full border-t-transparent animate-spin"></div>
+                </div>
+
+                {/* Progressive loading messages */}
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-gray-300">
+                    {loadingStage === 0 && "Analyzing schema..."}
+                    {loadingStage === 1 && "Preparing prompt..."}
+                    {loadingStage === 2 && "Generating response..."}
+                    {loadingStage === 3 && "Validating output..."}
+                  </p>
+                  <div className="flex items-center justify-center gap-1">
+                    <div className={`w-2 h-2 rounded-full transition-colors ${loadingStage >= 0 ? 'bg-blue-500' : 'bg-gray-700'}`}></div>
+                    <div className={`w-2 h-2 rounded-full transition-colors ${loadingStage >= 1 ? 'bg-blue-500' : 'bg-gray-700'}`}></div>
+                    <div className={`w-2 h-2 rounded-full transition-colors ${loadingStage >= 2 ? 'bg-blue-500' : 'bg-gray-700'}`}></div>
+                    <div className={`w-2 h-2 rounded-full transition-colors ${loadingStage >= 3 ? 'bg-blue-500' : 'bg-gray-700'}`}></div>
+                  </div>
                 </div>
               </div>
             </div>

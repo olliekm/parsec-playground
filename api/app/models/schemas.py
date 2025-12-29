@@ -16,6 +16,7 @@ class GenerateRequest(BaseModel):
     temperature: Optional[float] = Field(0.7, ge=0.0, le=1.0)
     max_tokens: Optional[int] = 1000
     template_id: Optional[int] = None
+    api_key: Optional[str] = Field(None, description="Optional user-provided API key. If not provided, uses server's API key from environment.")
 
 class GenerateResponse(BaseModel):
     """
@@ -88,7 +89,7 @@ class RunResponse(BaseModel):
     provider: str
     model: str
     prompt: str
-    json_schema: dict
+    json_schema: dict = Field(..., alias="schema")
     raw_output: Optional[str] = None
     parsed_output: Optional[Any] = None
     validation_errors: Optional[List[str]] = None
@@ -100,6 +101,12 @@ class RunResponse(BaseModel):
 
     class Config:
         from_attributes = True
+        populate_by_name = True
+
+    model_config = {
+        "populate_by_name": True,
+        "from_attributes": True,
+    }
 
 class HistoryResponse(BaseModel):
     """

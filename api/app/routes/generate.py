@@ -27,7 +27,8 @@ async def generate(request: GenerateRequest, db: Session = Depends(get_db)):
             prompt=request.prompt,
             schema=request.json_schema,
             temperature=request.temperature,
-            max_tokens=request.max_tokens
+            max_tokens=request.max_tokens,
+            api_key=request.api_key
         )
         run = Run(
             template_id=request.template_id,

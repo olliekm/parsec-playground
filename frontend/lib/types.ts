@@ -8,6 +8,7 @@ export interface GenerateRequest {
   temperature?: number;
   max_tokens?: number;
   template_id?: number;
+  api_key?: string;
 }
 
 export interface GenerateResponse {
