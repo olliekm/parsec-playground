@@ -43,7 +43,7 @@ app.add_middleware(
 )
 
 app.include_router(generate.router, prefix="/api", tags=["generate"])
-# app.include_router(templates.router, prefix="/api/templates", tags=["templates"])
+app.include_router(templates.router, prefix="/api/templates", tags=["templates"])
 # app.include_router(history.router, prefix="/api/history", tags=["history"])
 # app.include_router(analytics.router, prefix="/api/analytics", tags=["analytics"])
 
