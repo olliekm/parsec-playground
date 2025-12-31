@@ -2,7 +2,7 @@
 
 ![Parsec Playground Screenshot](assets/simpleperson.png)
 
-A modern web-based playground for testing and experimenting with [Parsec](https://github.com/BeastByteAI/parsec) - an LLM orchestration toolkit for structured output with schema enforcement and validation.
+A modern web-based playground for testing and experimenting with [Parsec](https://github.com/olliekm/parsec) - an LLM orchestration toolkit for structured output with schema enforcement and validation.
 
 ## What is Parsec Playground?
 
