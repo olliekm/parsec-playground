@@ -15,7 +15,7 @@ Parsec Playground is an interactive development environment that allows you to:
 - **Performance Metrics** - Monitor latency, token usage, and validation status
 - **Secure API Keys** - Use your own API keys or configure server-side defaults
 
-![Parsec Playground Screenshot](assets/exmaple.gif)
+![Parsec Playground Demo](assets/exmaple.gif)
 
 ## Features
 
