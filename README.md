@@ -163,4 +163,4 @@ MIT
 
 ## Acknowledgments
 
-Built with [Parsec](https://github.com/BeastByteAI/parsec) by BeastByte AI
+Built with [Parsec](https://github.com/olliekm/parsec) by Oliver Kwun-Morfitt
